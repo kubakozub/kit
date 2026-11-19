@@ -8,7 +8,6 @@ import {
 	error_for_missing_config,
 	is_server_only_path,
 	normalize_id,
-	query_pattern,
 	remote_module_pattern,
 	server_only_directory_pattern,
 	server_only_module_pattern
@@ -16,7 +15,11 @@ import {
 import * as e from '../../../messages/build-errors.js';
 import { posixify } from '../../../utils/os.js';
 
-const server_only_module_with_query_pattern = /[/.]server\.[^/?]+\?/;
+const server_only_module_with_query_pattern = /[/.]server\.[^/?#]+[?#]/;
+
+/** Strips a query *or* a fragment. `query_pattern` from utils.js only strips a query,
+ * and is shared with other call sites, so the fragment-aware form is kept local. */
+const query_or_fragment_pattern = /[?#].*$/s;
 
 /**
  * Ensures that client-side code can't accidentally import server-side code,
@@ -117,7 +120,7 @@ export function plugin_guard(kit, get_config, get_manifest_data) {
 				const is_server_only =
 					normalized === '$app/env/private' ||
 					normalized === '$app/server' ||
-					is_server_only_path(id.replace(query_pattern, ''), {
+					is_server_only_path(id.replace(query_or_fragment_pattern, ''), {
 						root: normalized_cwd,
 						node_modules: normalized_node_modules,
 						routes: normalized_routes,
